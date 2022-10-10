@@ -43,6 +43,7 @@ class GeocodeData:
         with open(country_filename, 'r') as handler:
             for code, name in csv.reader(handler):
                 self.__countries[code] = name
+            handler.close()
 
     def query(self, coordinates):
         """Find closest match to this list of coordinates
@@ -72,7 +73,8 @@ class GeocodeData:
         """
         if os.path.exists(local_filename):
             # open compact CSV
-            rows = csv.reader(open(local_filename, 'r'))
+            fr = open(local_filename, 'r')
+            rows = csv.reader(fr)
         else:
             if not os.path.exists(GEOCODE_FILENAME):
                 # remove GEOCODE_FILENAME to get updated data
@@ -81,11 +83,14 @@ class GeocodeData:
                 with zipfile.ZipFile(downloadedFile) as z:
                     with open(GEOCODE_FILENAME, 'wb') as fp:
                         fp.write(z.read(GEOCODE_FILENAME))
+                        fp.close()
 
             # extract coordinates into more compact CSV for faster loading
-            writer = csv.writer(open(local_filename, 'w'))
+            fw = open(local_filename, 'w')
+            writer = csv.writer(fw)
             rows = []
-            for row in csv.reader(open(GEOCODE_FILENAME, 'r'), delimiter='\t'):
+            fr = open(GEOCODE_FILENAME, 'r')
+            for row in csv.reader(fr, delimiter='\t'):
                 latitude, longitude = row[4:6]
                 country_code = row[8]
                 if latitude and longitude and country_code:
@@ -93,6 +98,7 @@ class GeocodeData:
                     row = latitude, longitude, country_code, city
                     writer.writerow(row)
                     rows.append(row)
+            fw.close()
             # cleanup downloaded files
             os.remove(downloadedFile)
             os.remove(GEOCODE_FILENAME)
@@ -102,6 +108,7 @@ class GeocodeData:
         for latitude, longitude, country_code, city in rows:
             coordinates.append((latitude, longitude))
             __locations.append(dict(country_code=country_code, city=city))
+        fr.close()
         return coordinates, __locations
 
 
@@ -131,3 +138,4 @@ if __name__ == '__main__':
     city2 = 31.76, 35.21
     print(get(city1))
     print(search([city1, city2]))
+
